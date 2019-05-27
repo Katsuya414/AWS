@@ -1,0 +1,8 @@
+# .gitignoreの一番下に追加
+# Ignore .tfvars file
+*.tfvars
+# Ignore terraform logs
+*.tfstate
+*.tfstate.backup
+# Local .terraform directories
+**/.terraform/*
