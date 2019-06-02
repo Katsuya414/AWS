@@ -1,13 +1,11 @@
 variable "aws_access_key_id" {}
 variable "aws_secret_access_key" {}
-variable "region" {
-  default = "us-west-2"
-}
+variable "region" {}
 
 provider "aws" {
-    access_key = "${var.aws_access_key_id}"
-    secret_key = "${var.aws_secret_access_key}"
-    region = "${var.region}"
+  access_key = "${var.aws_access_key_id}"
+  secret_key = "${var.aws_secret_access_key}"
+  region     = "${var.region}"
 }
 
 resource "aws_vpc" "vpc-1" {
@@ -19,17 +17,14 @@ resource "aws_vpc" "vpc-1" {
 
 # EIP
 resource "aws_eip" "nat" {
-    vpc = true
+  vpc = true
 }
 
-resource "aws_eip" "nat2" {
-    vpc = true
-}
 
 # NatGateway
 resource "aws_nat_gateway" "nat" {
   allocation_id = "${aws_eip.nat.id}"
-  subnet_id = "${aws_subnet.private-a.id}"
+  subnet_id     = "${aws_subnet.private.id}"
 }
 
 
@@ -42,8 +37,8 @@ resource "aws_internet_gateway" "igw" {
 
 # Subnet
 resource "aws_subnet" "public-a" {
-  vpc_id = "${aws_vpc.vpc-1.id}"
-  cidr_block = "10.3.0.0/24"
+  vpc_id            = "${aws_vpc.vpc-1.id}"
+  cidr_block        = "10.3.0.0/24"
   availability_zone = "us-west-2a"
   tags = {
     Name = "public-a"
@@ -51,8 +46,8 @@ resource "aws_subnet" "public-a" {
 }
 
 resource "aws_subnet" "public-c" {
-  vpc_id = "${aws_vpc.vpc-1.id}"
-  cidr_block = "10.3.2.0/24"
+  vpc_id            = "${aws_vpc.vpc-1.id}"
+  cidr_block        = "10.3.2.0/24"
   availability_zone = "us-west-2c"
   tags = {
     Name = "public-c"
@@ -60,8 +55,8 @@ resource "aws_subnet" "public-c" {
 }
 
 resource "aws_subnet" "private-a" {
-  vpc_id = "${aws_vpc.vpc-1.id}"
-  cidr_block = "10.3.4.0/24"
+  vpc_id            = "${aws_vpc.vpc-1.id}"
+  cidr_block        = "10.3.4.0/24"
   availability_zone = "us-west-2a"
   tags = {
     Name = "private-a"
@@ -69,13 +64,15 @@ resource "aws_subnet" "private-a" {
 }
 
 resource "aws_subnet" "private-c" {
-  vpc_id = "${aws_vpc.vpc-1.id}"
-  cidr_block = "10.3.6.0/24"
+  vpc_id            = "${aws_vpc.vpc-1.id}"
+  cidr_block        = "10.3.6.0/24"
   availability_zone = "us-west-2c"
   tags = {
     Name = "private-c"
   }
 }
+
+
 
 # RouteTable
 resource "aws_route_table" "public" {
@@ -92,7 +89,7 @@ resource "aws_route_table" "public" {
 resource "aws_route_table" "private" {
   vpc_id = "${aws_vpc.vpc-1.id}"
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = "${aws_nat_gateway.nat.id}"
   }
   tags = {
@@ -102,21 +99,21 @@ resource "aws_route_table" "private" {
 
 # SubnetRouteTableAssociation
 resource "aws_route_table_association" "public-a" {
-    subnet_id = "${aws_subnet.public-a.id}"
-    route_table_id = "${aws_route_table.public.id}"
+  subnet_id      = "${aws_subnet.public-a.id}"
+  route_table_id = "${aws_route_table.public.id}"
 }
 
 resource "aws_route_table_association" "public-c" {
-    subnet_id = "${aws_subnet.public-c.id}"
-    route_table_id = "${aws_route_table.public.id}"
+  subnet_id      = "${aws_subnet.public-c.id}"
+  route_table_id = "${aws_route_table.public.id}"
 }
 
 resource "aws_route_table_association" "private-a" {
-    subnet_id = "${aws_subnet.private-a.id}"
-    route_table_id = "${aws_route_table.private.id}"
+  subnet_id      = "${aws_subnet.private-a.id}"
+  route_table_id = "${aws_route_table.private.id}"
 }
 
 resource "aws_route_table_association" "private-c" {
-    subnet_id = "${aws_subnet.private-c.id}"
-    route_table_id = "${aws_route_table.private.id}"
+  subnet_id      = "${aws_subnet.private-c.id}"
+  route_table_id = "${aws_route_table.private.id}"
 }
