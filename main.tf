@@ -11,109 +11,121 @@ provider "aws" {
 resource "aws_vpc" "vpc-1" {
   cidr_block = "10.3.0.0/16"
   tags = {
-    Name = "vpc-1"
+    Name = "vpc-katuo"
   }
 }
 
-# EIP
-resource "aws_eip" "nat" {
+
+resource "aws_subnet" "public1a" {
+  vpc_id = "${aws_vpc.vpc-1.id}"
+
+  cidr_block        = "${cidrsubnet(aws_vpc.vpc-1.cidr_block, 8, 0)}"
+  availability_zone = "us-west-2a"
+
+  tags = {
+    Name = "$public1a"
+  }
+}
+
+resource "aws_subnet" "public1c" {
+  vpc_id = "${aws_vpc.vpc-1.id}"
+
+  cidr_block        = "${cidrsubnet(aws_vpc.vpc-1.cidr_block, 8, 1)}"
+  availability_zone = "us-west-2c"
+
+  tags = {
+    Name = "public1c"
+  }
+}
+
+
+resource "aws_subnet" "nat-private1a" {
+  vpc_id = "${aws_vpc.vpc-1.id}"
+
+  cidr_block        = "${cidrsubnet(aws_vpc.vpc-1.cidr_block, 8, 4)}"
+  availability_zone = "us-west-2a"
+
+  tags = {
+    Name = "nat-private1a"
+  }
+}
+
+resource "aws_subnet" "nat-private1c" {
+  vpc_id = "${aws_vpc.vpc-1.id}"
+
+  cidr_block        = "${cidrsubnet(aws_vpc.vpc-1.cidr_block, 8, 5)}"
+  availability_zone = "us-west-2c"
+
+  tags = {
+    Name = "nat-private1c"
+  }
+}
+
+
+
+resource "aws_internet_gateway" "gw" {
+  vpc_id = "${aws_vpc.vpc-1.id}"
+
+  tags = {
+    Name = "gateway"
+  }
+}
+
+resource "aws_eip" "nat_gateway" {
   vpc = true
 }
 
-
-# NatGateway
-resource "aws_nat_gateway" "nat" {
-  allocation_id = "${aws_eip.nat.id}"
-  subnet_id     = "${aws_subnet.private.id}"
+resource "aws_nat_gateway" "nat_gw" {
+  allocation_id = "${aws_eip.nat_gateway.id}"
+  subnet_id     = "${aws_subnet.public1a.id}"
+  depends_on    = ["aws_internet_gateway.gw"]
 }
 
 
-
-# InternetGateway
-resource "aws_internet_gateway" "igw" {
-  vpc_id = "${aws_vpc.vpc-1.id}"
-}
-
-
-# Subnet
-resource "aws_subnet" "public-a" {
-  vpc_id            = "${aws_vpc.vpc-1.id}"
-  cidr_block        = "10.3.0.0/24"
-  availability_zone = "us-west-2a"
-  tags = {
-    Name = "public-a"
-  }
-}
-
-resource "aws_subnet" "public-c" {
-  vpc_id            = "${aws_vpc.vpc-1.id}"
-  cidr_block        = "10.3.2.0/24"
-  availability_zone = "us-west-2c"
-  tags = {
-    Name = "public-c"
-  }
-}
-
-resource "aws_subnet" "private-a" {
-  vpc_id            = "${aws_vpc.vpc-1.id}"
-  cidr_block        = "10.3.4.0/24"
-  availability_zone = "us-west-2a"
-  tags = {
-    Name = "private-a"
-  }
-}
-
-resource "aws_subnet" "private-c" {
-  vpc_id            = "${aws_vpc.vpc-1.id}"
-  cidr_block        = "10.3.6.0/24"
-  availability_zone = "us-west-2c"
-  tags = {
-    Name = "private-c"
-  }
-}
-
-
-
-# RouteTable
 resource "aws_route_table" "public" {
   vpc_id = "${aws_vpc.vpc-1.id}"
+
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.igw.id}"
+    gateway_id = "${aws_internet_gateway.gw.id}"
   }
+
   tags = {
     Name = "public"
   }
 }
 
-resource "aws_route_table" "private" {
+resource "aws_route_table" "nat-private" {
   vpc_id = "${aws_vpc.vpc-1.id}"
+
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = "${aws_nat_gateway.nat.id}"
+    nat_gateway_id = "${aws_nat_gateway.nat_gw.id}"
   }
+
   tags = {
-    Name = "private"
+    Name = "nat-private"
   }
 }
 
-# SubnetRouteTableAssociation
-resource "aws_route_table_association" "public-a" {
-  subnet_id      = "${aws_subnet.public-a.id}"
+
+
+resource "aws_route_table_association" "public1a" {
   route_table_id = "${aws_route_table.public.id}"
+  subnet_id      = "${aws_subnet.public1a.id}"
 }
 
-resource "aws_route_table_association" "public-c" {
-  subnet_id      = "${aws_subnet.public-c.id}"
+resource "aws_route_table_association" "public1c" {
   route_table_id = "${aws_route_table.public.id}"
+  subnet_id      = "${aws_subnet.public1c.id}"
 }
 
-resource "aws_route_table_association" "private-a" {
-  subnet_id      = "${aws_subnet.private-a.id}"
-  route_table_id = "${aws_route_table.private.id}"
+resource "aws_route_table_association" "nat-private1a" {
+  route_table_id = "${aws_route_table.nat-private.id}"
+  subnet_id      = "${aws_subnet.nat-private1a.id}"
 }
 
-resource "aws_route_table_association" "private-c" {
-  subnet_id      = "${aws_subnet.private-c.id}"
-  route_table_id = "${aws_route_table.private.id}"
+resource "aws_route_table_association" "nat-private1c" {
+  route_table_id = "${aws_route_table.nat-private.id}"
+  subnet_id      = "${aws_subnet.nat-private1c.id}"
 }
